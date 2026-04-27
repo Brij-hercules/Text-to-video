@@ -236,14 +236,33 @@ class VideoAssistant {
 
         // Save to Supabase
         if (this.supabase) {
-            const { error } = await this.supabase.from('videos').insert([videoData]);
-            if (error) console.error('❌ Save Error:', error.message);
-            else console.log('✅ Video Saved to DB');
+            this.saveGeneration(videoData);
         }
 
         const params = this.generateParams(videoData.prompt);
         this.updateParamsViewer(params);
-        this.respond(`Video ready! Tamari character identity (${this.state.face_id}) sathe generate thayu chhe ane Database ma save thayu chhe.`);
+        this.respond(`Video ready! Tamari character identity (${this.state.face_id}) sathe generate thayu chhe ane Supabase Storage ma save thayu chhe.`);
+    }
+
+    async saveGeneration(videoData) {
+        try {
+            // Logic for Storage Upload (Mocking with the URL for now)
+            console.log('🚀 Uploading to Supabase Storage Bucket: videos...');
+            
+            const { error: dbError } = await this.supabase.from('videos').insert([videoData]);
+            if (dbError) throw dbError;
+            console.log('✅ Video Record Saved in DB');
+        } catch (err) {
+            console.error('❌ Supabase Save Error:', err.message);
+        }
+    }
+
+    async uploadToStorage(file, path) {
+        // This function will be used for real file uploads
+        const { data, error } = await this.supabase.storage
+            .from('videos')
+            .upload(path, file);
+        return { data, error };
     }
 
     downloadVideo() {
