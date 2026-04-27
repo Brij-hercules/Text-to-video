@@ -108,11 +108,21 @@
                                         <option value="1080p">1080p Pro</option>
                                         <option value="4k">4K Ultra</option>
                                         <option value="720p">720p Turbo</option>
+                                        <option value="480p">480p SD</option>
                                     </select>
                                     <select class="studio-select" id="studioModel" onchange="app.setModel(this.value)">
                                         <option value="pro">Pro Engine</option>
                                         <option value="ultra">Ultra 3D</option>
                                     </select>
+                                </div>
+                            </div>
+
+                            <div class="control-group">
+                                <label>Aspect Ratio</label>
+                                <div class="option-grid-mini">
+                                    <button class="opt-btn-ratio active" onclick="app.setAspectRatio('16:9')">16:9</button>
+                                    <button class="opt-btn-ratio" onclick="app.setAspectRatio('9:16')">9:16</button>
+                                    <button class="opt-btn-ratio" onclick="app.setAspectRatio('1:1')">1:1</button>
                                 </div>
                             </div>
 

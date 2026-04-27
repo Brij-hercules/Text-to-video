@@ -123,7 +123,7 @@ class VideoAssistant {
         const btns = document.querySelectorAll('.mode-btn');
         
         btns.forEach(b => b.classList.remove('active'));
-        if (event) event.target.classList.add('active');
+        if (window.event) window.event.target.classList.add('active');
 
         if (mode === 'text-to-video') {
             textGroup.style.display = 'block';
@@ -134,7 +134,35 @@ class VideoAssistant {
         }
     }
 
-    handleStudioGenerate() {
+    setQuality(q) {
+        this.state.current_quality = q;
+        this.updateActiveButtons('opt-btn-quality', q);
+    }
+
+    setDuration(d) {
+        this.state.current_duration = d;
+        this.updateActiveButtons('opt-btn-mini', d);
+    }
+
+    setAspectRatio(ratio) {
+        this.state.current_ratio = ratio;
+        this.updateActiveButtons('opt-btn-ratio', ratio);
+        const videoContainer = document.getElementById('videoContainer');
+        if (ratio === '9:16') videoContainer.style.aspectRatio = '9/16';
+        else if (ratio === '1:1') videoContainer.style.aspectRatio = '1/1';
+        else videoContainer.style.aspectRatio = '16/9';
+    }
+
+    setModel(m) {
+        this.state.current_model = m;
+    }
+
+    updateActiveButtons(className, value) {
+        // Simple logic to highlight selected buttons
+        console.log(`Setting ${className} to ${value}`);
+    }
+
+    async handleStudioGenerate() {
         if (!this.state.face_id) {
             this.switchTab('chat');
             this.respond("Pehla tamari 'Girl Model' identity create karo jethi character consistency rahai!");
@@ -147,10 +175,10 @@ class VideoAssistant {
             return;
         }
 
-        this.startGenerationSim();
+        await this.startGenerationSim();
     }
 
-    startGenerationSim() {
+    async startGenerationSim() {
         const progressContainer = document.getElementById('progressBarContainer');
         const progressFill = document.getElementById('progressFill');
         const progressText = document.getElementById('progressText');
@@ -162,19 +190,19 @@ class VideoAssistant {
         videoContainer.innerHTML = '<div class="loading-spinner"></div><p>Rendering Cinematic Frames...</p>';
 
         let progress = 0;
-        const interval = setInterval(() => {
+        const interval = setInterval(async () => {
             progress += Math.random() * 15;
             if (progress >= 100) {
                 progress = 100;
                 clearInterval(interval);
-                this.completeGenerationSim();
+                await this.completeGenerationSim();
             }
             progressFill.style.width = `${progress}%`;
             progressText.innerText = `Generating... ${Math.round(progress)}%`;
-        }, 600);
+        }, 400);
     }
 
-    completeGenerationSim() {
+    async completeGenerationSim() {
         const videoContainer = document.getElementById('videoContainer');
         const genBtn = document.getElementById('generateBtn');
         const progressBar = document.getElementById('progressBarContainer');
@@ -182,18 +210,35 @@ class VideoAssistant {
         genBtn.disabled = false;
         progressBar.style.display = 'none';
 
-        // High-quality cinematic placeholder video
+        const videoUrl = "https://assets.mixkit.co/videos/preview/mixkit-girl-walking-in-a-forest-40010-large.mp4";
+
         videoContainer.innerHTML = `
             <video autoplay loop muted playsinline class="generated-video">
-                <source src="https://assets.mixkit.co/videos/preview/mixkit-girl-walking-in-a-forest-40010-large.mp4" type="video/mp4">
-                Your browser does not support the video tag.
+                <source src="${videoUrl}" type="video/mp4">
             </video>
-            <div class="video-overlay-tag">PRODUCED: 4K ULTRA</div>
+            <div class="video-overlay-tag">PRODUCED: ${this.state.current_quality} | ID: ${this.state.face_id}</div>
         `;
 
-        const params = this.generateParams(document.getElementById('studioPrompt').value || "AI Character Video");
+        const videoData = {
+            face_id: this.state.face_id,
+            prompt: document.getElementById('studioPrompt').value || "AI Cinematic Render",
+            video_url: videoUrl,
+            quality: this.state.current_quality,
+            duration: this.state.current_duration,
+            aspect_ratio: this.state.current_ratio || '16:9',
+            created_at: new Date().toISOString()
+        };
+
+        // Save to Supabase
+        if (this.supabase) {
+            const { error } = await this.supabase.from('videos').insert([videoData]);
+            if (error) console.error('❌ Save Error:', error.message);
+            else console.log('✅ Video Saved to DB');
+        }
+
+        const params = this.generateParams(videoData.prompt);
         this.updateParamsViewer(params);
-        this.respond("Video generation complete! Tamari 'Girl Model' character consistency sathe video ready chhe.");
+        this.respond(`Video ready! Tamari character identity (${this.state.face_id}) sathe generate thayu chhe ane Database ma save thayu chhe.`);
     }
 
     downloadVideo() {

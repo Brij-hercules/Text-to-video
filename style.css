@@ -513,16 +513,22 @@ textarea {
     gap: 10px;
 }
 
-.opt-btn-mini {
+.opt-btn-mini, .opt-btn-ratio {
     background: var(--bg-dark);
     border: 1px solid var(--border);
     color: var(--text-dim);
     padding: 10px;
     border-radius: 10px;
     font-size: 12px;
+    cursor: pointer;
+    transition: all 0.2s;
 }
 
-.opt-btn-mini.active {
+.opt-btn-mini:hover, .opt-btn-ratio:hover {
+    border-color: var(--accent-primary);
+}
+
+.opt-btn-mini.active, .opt-btn-ratio.active {
     background: rgba(99, 102, 241, 0.1);
     border-color: var(--accent-primary);
     color: var(--accent-primary);
@@ -533,16 +539,20 @@ textarea {
     display: flex;
     flex-direction: column;
     gap: 20px;
+    align-items: center;
 }
 
 .preview-window {
     background: #000;
     border-radius: 24px;
+    width: 100%;
+    max-width: 800px;
     aspect-ratio: 16/9;
     position: relative;
     overflow: hidden;
     border: 1px solid var(--border);
     box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+    transition: aspect-ratio 0.4s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .video-container {
