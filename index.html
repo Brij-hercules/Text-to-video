@@ -29,9 +29,9 @@
                     <span class="icon">👤</span>
                     <span>Face Library</span>
                 </div>
-                <div class="nav-item" onclick="app.switchTab('generations')">
+                <div class="nav-item" onclick="app.switchTab('studio')">
                     <span class="icon">🎬</span>
-                    <span>My Generations</span>
+                    <span>Generation Studio</span>
                 </div>
                 <div class="nav-item" onclick="app.switchTab('preview')">
                     <span class="icon">👗</span>
@@ -70,6 +70,49 @@
                             <button class="btn-secondary" onclick="app.requestGenerateFace()">Generate AI Girl Model</button>
                         </div>
                     </div>
+                </div>
+            </div>
+
+            <div class="studio-area" id="studioArea" style="display: none;">
+                <div class="studio-header">
+                    <h2>Generation Studio</h2>
+                    <p>Fine-tune your cinematic parameters for high-end production.</p>
+                </div>
+                
+                <div class="studio-controls">
+                    <div class="control-group">
+                        <label>Resolution</label>
+                        <div class="option-grid">
+                            <button class="opt-btn" onclick="app.setQuality('480p')">480p</button>
+                            <button class="opt-btn" onclick="app.setQuality('720p')">720p</button>
+                            <button class="opt-btn active" onclick="app.setQuality('1080p')">1080p</button>
+                            <button class="opt-btn" onclick="app.setQuality('4k')">4K Ultra</button>
+                        </div>
+                    </div>
+
+                    <div class="control-group">
+                        <label>Duration</label>
+                        <div class="option-grid">
+                            <button class="opt-btn active" onclick="app.setDuration('5s')">5s</button>
+                            <button class="opt-btn" onclick="app.setDuration('10s')">10s</button>
+                            <button class="opt-btn" onclick="app.setDuration('20s')">20s</button>
+                            <button class="opt-btn" onclick="app.setDuration('60s')">1 Min</button>
+                            <button class="opt-btn" onclick="app.setDuration('600s')">10 Min</button>
+                        </div>
+                    </div>
+
+                    <div class="control-group">
+                        <label>AI Model</label>
+                        <select class="studio-select" id="modelSelect" onchange="app.setModel(this.value)">
+                            <option value="pro">Pro (Cinematic Realism)</option>
+                            <option value="turbo">Turbo (Fast Generation)</option>
+                            <option value="ultra">Ultra 3D (Experimental)</option>
+                        </select>
+                    </div>
+
+                    <button class="btn-primary studio-gen-btn" onclick="app.handleStudioGenerate()">
+                        Initiate Production
+                    </button>
                 </div>
             </div>
 

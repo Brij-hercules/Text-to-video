@@ -58,14 +58,50 @@ class VideoAssistant {
 
     switchTab(tab) {
         this.state.current_tab = tab;
+        this.chatArea.style.display = 'none';
+        this.previewArea.style.display = 'none';
+        this.studioArea = document.getElementById('studioArea');
+        this.studioArea.style.display = 'none';
+
         if (tab === 'chat') {
             this.chatArea.style.display = 'flex';
-            this.previewArea.style.display = 'none';
         } else if (tab === 'preview') {
-            this.chatArea.style.display = 'none';
             this.previewArea.style.display = 'flex';
             this.updateModelPreview();
+        } else if (tab === 'studio') {
+            this.studioArea.style.display = 'flex';
         }
+    }
+
+    setQuality(q) {
+        this.state.current_quality = q;
+        this.updateActiveButtons('resolution', q);
+    }
+
+    setDuration(d) {
+        this.state.current_duration = d;
+        this.updateActiveButtons('duration', d);
+    }
+
+    setModel(m) {
+        this.state.current_model = m;
+    }
+
+    updateActiveButtons(type, value) {
+        // Logic to highlight selected buttons in studio
+        console.log(`Setting ${type} to ${value}`);
+    }
+
+    handleStudioGenerate() {
+        if (!this.state.face_id) {
+            this.switchTab('chat');
+            this.respond("Pehla tamari character identity (Girl Model) create karo!");
+            return;
+        }
+
+        const params = this.generateParams("Studio generated cinematic video");
+        this.updateParamsViewer(params);
+        alert("Video Production Started with Studio Parameters! Check JSON output.");
     }
 
     updateModelPreview() {

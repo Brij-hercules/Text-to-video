@@ -445,3 +445,90 @@ textarea {
     border: 1px solid var(--border);
 }
 
+/* Studio Area */
+.studio-area {
+    flex: 1;
+    padding: 60px;
+    display: flex;
+    flex-direction: column;
+    gap: 40px;
+    background: radial-gradient(circle at top right, rgba(99, 102, 241, 0.1) 0%, transparent 60%);
+    overflow-y: auto;
+}
+
+.studio-header h2 {
+    font-size: 32px;
+    margin-bottom: 8px;
+    background: linear-gradient(to right, #fff, var(--accent-primary));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+.studio-header p {
+    color: var(--text-dim);
+}
+
+.studio-controls {
+    display: flex;
+    flex-direction: column;
+    gap: 32px;
+    max-width: 700px;
+}
+
+.control-group label {
+    display: block;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-main);
+    margin-bottom: 16px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.option-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+}
+
+.opt-btn {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    color: var(--text-dim);
+    padding: 12px 20px;
+    border-radius: 12px;
+    font-size: 14px;
+    transition: all 0.2s;
+}
+
+.opt-btn:hover {
+    border-color: var(--accent-primary);
+    color: var(--text-main);
+}
+
+.opt-btn.active {
+    background: var(--accent-primary);
+    color: white;
+    border-color: var(--accent-primary);
+    box-shadow: 0 4px 15px var(--accent-glow);
+}
+
+.studio-select {
+    width: 100%;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    color: var(--text-main);
+    padding: 14px;
+    border-radius: 12px;
+    outline: none;
+    font-family: inherit;
+    font-size: 15px;
+}
+
+.studio-gen-btn {
+    margin-top: 20px;
+    padding: 18px;
+    font-size: 16px;
+    letter-spacing: 1px;
+}
+
