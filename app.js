@@ -1,5 +1,17 @@
 class VideoAssistant {
     constructor() {
+        // Supabase Configuration
+        this.supabaseUrl = 'https://dfamxzkezsfmetsttrjp.supabase.co';
+        this.supabaseKey = 'sb_publishable_jabIvwy51ZJqvE2zA9vJzg_EuqeaLyv';
+        this.supabase = null;
+
+        if (window.supabase) {
+            this.supabase = window.supabase.createClient(this.supabaseUrl, this.supabaseKey);
+            console.log('✅ Supabase Initialized Successfully');
+        } else {
+            console.error('❌ Supabase Library not found. Check index.html script tag.');
+        }
+
         this.state = {
             face_id: null,
             face_lock: false,
