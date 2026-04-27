@@ -19,7 +19,7 @@ class VideoAssistant {
             current_model: 'pro',
             current_quality: '1080p',
             current_duration: '5s',
-            current_tab: 'chat',
+            current_tab: localStorage.getItem('activeTab') || 'chat',
             history: []
         };
         
@@ -29,12 +29,23 @@ class VideoAssistant {
     init() {
         this.chatArea = document.getElementById('chatArea');
         this.previewArea = document.getElementById('previewArea');
+        this.studioArea = document.getElementById('studioArea');
         this.modelDisplay = document.getElementById('modelDisplay');
         this.modelInfo = document.getElementById('modelInfo');
         this.userInput = document.getElementById('userInput');
         this.sendBtn = document.getElementById('sendBtn');
         this.jsonOutput = document.getElementById('jsonOutput');
         this.faceStatus = document.getElementById('faceStatus');
+
+        // Restore active tab UI
+        this.switchTab(this.state.current_tab);
+        document.querySelectorAll('.nav-item').forEach(item => {
+            if (item.innerText.toLowerCase().includes(this.state.current_tab)) {
+                item.classList.add('active');
+            } else {
+                item.classList.remove('active');
+            }
+        });
 
         this.sendBtn.addEventListener('click', () => this.handleSend());
         this.userInput.addEventListener('keypress', (e) => {
@@ -88,10 +99,12 @@ class VideoAssistant {
 
     switchTab(tab) {
         this.state.current_tab = tab;
+        localStorage.setItem('activeTab', tab); // Save to localStorage
+        
         this.chatArea.style.display = 'none';
         this.previewArea.style.display = 'none';
         this.studioArea = document.getElementById('studioArea');
-        this.studioArea.style.display = 'none';
+        if (this.studioArea) this.studioArea.style.display = 'none';
 
         if (tab === 'chat') {
             this.chatArea.style.display = 'flex';
