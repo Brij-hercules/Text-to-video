@@ -215,7 +215,16 @@ class VideoAssistant {
         genBtn.disabled = false;
         progressBar.style.display = 'none';
 
-        const videoUrl = "https://assets.mixkit.co/videos/preview/mixkit-girl-walking-in-a-forest-40010-large.mp4";
+        const prompt = (document.getElementById('studioPrompt').value || "").toLowerCase();
+        let videoUrl = "https://assets.mixkit.co/videos/preview/mixkit-girl-walking-in-a-forest-40010-large.mp4"; // Default
+        
+        if (prompt.includes("beach") || prompt.includes("ocean") || prompt.includes("water")) {
+            videoUrl = "https://assets.mixkit.co/videos/preview/mixkit-young-woman-walking-on-the-beach-at-sunset-1208-large.mp4";
+        } else if (prompt.includes("urban") || prompt.includes("city") || prompt.includes("street")) {
+            videoUrl = "https://assets.mixkit.co/videos/preview/mixkit-woman-walking-down-a-busy-city-street-41221-large.mp4";
+        } else if (prompt.includes("cinematic") || prompt.includes("dark")) {
+            videoUrl = "https://assets.mixkit.co/videos/preview/mixkit-woman-sitting-on-a-bench-looking-at-the-ocean-at-4330-large.mp4";
+        }
 
         videoContainer.innerHTML = `
             <video autoplay loop muted playsinline class="generated-video">

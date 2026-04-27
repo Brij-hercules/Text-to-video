@@ -598,22 +598,26 @@ textarea {
 
 /* Restored Video Preview Styles */
 .studio-preview {
+    flex: 1;
     display: flex;
     flex-direction: column;
-    gap: 20px;
+    gap: 24px;
     align-items: center;
+    justify-content: flex-start;
+    min-width: 0; /* Prevent overflow in grid */
 }
 
 .preview-window {
     background: #000;
     border-radius: 28px;
     width: 100%;
-    max-width: 850px;
+    max-width: 900px;
+    min-height: 400px; /* Force minimum height to prevent collapse */
     aspect-ratio: 16/9;
     position: relative;
     overflow: hidden;
     border: 1px solid var(--border);
-    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+    box-shadow: 0 25px 60px -12px rgba(0, 0, 0, 0.6);
     transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
     display: flex;
     align-items: center;
