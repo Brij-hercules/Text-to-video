@@ -507,10 +507,24 @@ textarea {
     background: rgba(99, 102, 241, 0.05);
 }
 
+#studioPrompt {
+    width: 100%;
+    background: var(--bg-dark);
+    border: 1px solid var(--border);
+    color: var(--text-main);
+    padding: 14px;
+    border-radius: 12px;
+    outline: none;
+    font-family: inherit;
+    font-size: 14px;
+    resize: vertical;
+    margin-top: 8px;
+}
+
 .option-grid-mini {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 10px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
 }
 
 .opt-btn-mini, .opt-btn-ratio {
@@ -552,7 +566,10 @@ textarea {
     overflow: hidden;
     border: 1px solid var(--border);
     box-shadow: 0 20px 60px rgba(0,0,0,0.5);
-    transition: aspect-ratio 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .video-container {
@@ -563,9 +580,13 @@ textarea {
     align-items: center;
     justify-content: center;
     color: var(--text-dim);
+    position: relative;
 }
 
 .generated-video {
+    position: absolute;
+    top: 0;
+    left: 0;
     width: 100%;
     height: 100%;
     object-fit: cover;

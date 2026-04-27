@@ -158,8 +158,13 @@ class VideoAssistant {
     }
 
     updateActiveButtons(className, value) {
-        // Simple logic to highlight selected buttons
-        console.log(`Setting ${className} to ${value}`);
+        document.querySelectorAll(`.${className}`).forEach(btn => {
+            if (btn.innerText === value || btn.getAttribute('onclick')?.includes(`'${value}'`)) {
+                btn.classList.add('active');
+            } else {
+                btn.classList.remove('active');
+            }
+        });
     }
 
     async handleStudioGenerate() {
