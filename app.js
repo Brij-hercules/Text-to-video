@@ -222,11 +222,15 @@ class VideoAssistant {
         if (this.supabase) {
             try {
                 const { error } = await this.supabase.from('faces').insert([faceData]);
-                if (error) throw error;
-                console.log('✅ Girl Model Saved:', faceData.face_id);
+                if (error) {
+                    console.error('❌ Supabase Save Error:', error);
+                    this.respond(`⚠️ Database error: ${error.message}. (Jo 'new row violates RLS' aave to Supabase ma RLS disable karo)`);
+                } else {
+                    console.log('✅ Girl Model Saved:', faceData.face_id);
+                }
             } catch (err) {
-                console.error('❌ Supabase Save Error:', err.message);
-                this.respond("⚠️ Database error: Pehla Supabase ma 'faces' table create karo (SQL query run karo).");
+                console.error('❌ Unexpected Error:', err);
+                this.respond("⚠️ Something went wrong while saving to the database.");
             }
         }
 
