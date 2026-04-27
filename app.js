@@ -155,44 +155,40 @@ class VideoAssistant {
     }
 
     async requestGenerateFace() {
-        this.state.face_id = "f-" + Math.random().toString(36).substr(2, 9);
+        this.state.face_id = "girl-model-" + Math.random().toString(36).substr(2, 5);
         this.state.face_lock = true;
-        this.state.face_seed = 422789; // Fixed seed for 3D consistency as requested
+        this.state.face_seed = 882910; // Specific seed for consistent girl model
         
         const faceData = {
             "face_id": this.state.face_id,
-            "face_prompt": "Cinematic 3D character model, professional lighting, photorealistic face, detailed 8k render, consistent features for video reels.",
-            "gender": "Neutral/Professional",
-            "age": "28-32",
+            "face_prompt": "Full body cinematic character render of a beautiful girl, stylish outfit, 8k resolution, Unreal Engine 5 render, highly detailed face and body, consistent features for daily reels, photorealistic.",
+            "gender": "Female",
+            "age": "22-25",
             "ethnicity": "Global",
-            "hair": "Clean-cut",
+            "hair": "Long, stylish dark hair",
             "seed": this.state.face_seed,
-            "embedding": "v3_emb_" + Math.random().toString(36).substr(2, 12),
-            "preview_image_url": "https://api.generated.photos/v2/placeholder.jpg"
+            "embedding": "v3_girl_emb_" + Math.random().toString(36).substr(2, 10),
+            "preview_image_url": "https://api.generated.photos/v2/placeholder_girl.jpg"
         };
 
         this.state.face_metadata = faceData;
         
-        // Save to Supabase
         if (this.supabase) {
             try {
-                const { data, error } = await this.supabase
-                    .from('faces')
-                    .insert([faceData]);
-
+                const { error } = await this.supabase.from('faces').insert([faceData]);
                 if (error) throw error;
-                console.log('✅ Identity saved to Supabase:', data);
+                console.log('✅ Girl Model Saved:', faceData.face_id);
             } catch (err) {
-                console.error('❌ Error saving to Supabase:', err.message);
-                this.respond("Note: Database save failed. Please check if your 'faces' table is created in Supabase.");
+                console.error('❌ Supabase Save Error:', err.message);
+                this.respond("⚠️ Database error: Pehla Supabase ma 'faces' table create karo (SQL query run karo).");
             }
         }
 
         this.faceStatus.classList.add('connected');
-        this.faceStatus.querySelector('span').textContent = "3D Identity: Active";
+        this.faceStatus.querySelector('span').textContent = "Model: Girl (Locked)";
 
         this.updateParamsViewer(faceData);
-        this.respond("3D Face Model generated and saved to your Supabase library. This identity is now locked for all your daily reels.");
+        this.respond("Tamari 'Girl Model' generate thayi gayi chhe ane lock kari didhi chhe. Have tme jo koi pan video banavsho, to ama aa j girl model dekhase.");
     }
 }
 
