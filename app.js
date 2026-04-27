@@ -18,6 +18,7 @@ class VideoAssistant {
             current_model: 'pro',
             current_quality: '1080p',
             current_duration: '5s',
+            current_tab: 'chat',
             history: []
         };
         
@@ -26,6 +27,9 @@ class VideoAssistant {
 
     init() {
         this.chatArea = document.getElementById('chatArea');
+        this.previewArea = document.getElementById('previewArea');
+        this.modelDisplay = document.getElementById('modelDisplay');
+        this.modelInfo = document.getElementById('modelInfo');
         this.userInput = document.getElementById('userInput');
         this.sendBtn = document.getElementById('sendBtn');
         this.jsonOutput = document.getElementById('jsonOutput');
@@ -39,11 +43,53 @@ class VideoAssistant {
             }
         });
 
-        // Auto-expand textarea
-        this.userInput.addEventListener('input', () => {
-            this.userInput.style.height = 'auto';
-            this.userInput.style.height = this.userInput.scrollHeight + 'px';
+        // Tab Switching
+        document.querySelectorAll('.nav-item').forEach(item => {
+            item.addEventListener('click', (e) => {
+                const tab = e.currentTarget.innerText.toLowerCase().includes('chat') ? 'chat' : 
+                            e.currentTarget.innerText.toLowerCase().includes('preview') ? 'preview' : 'other';
+                if (tab !== 'other') this.switchTab(tab);
+                
+                document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
+                e.currentTarget.classList.add('active');
+            });
         });
+    }
+
+    switchTab(tab) {
+        this.state.current_tab = tab;
+        if (tab === 'chat') {
+            this.chatArea.style.display = 'flex';
+            this.previewArea.style.display = 'none';
+        } else if (tab === 'preview') {
+            this.chatArea.style.display = 'none';
+            this.previewArea.style.display = 'flex';
+            this.updateModelPreview();
+        }
+    }
+
+    updateModelPreview() {
+        if (!this.state.face_metadata) {
+            this.modelDisplay.innerHTML = '<div class="no-model">No Character Model Generated Yet</div>';
+            return;
+        }
+
+        const data = this.state.face_metadata;
+        this.modelDisplay.innerHTML = `
+            <img src="https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&q=80&w=800" alt="Character Preview">
+            <div class="overlay-glow"></div>
+        `;
+        
+        this.modelInfo.innerHTML = `
+            <div class="info-grid">
+                <div class="info-item"><span>ID:</span> ${data.face_id}</div>
+                <div class="info-item"><span>Gender:</span> ${data.gender}</div>
+                <div class="info-item"><span>Age:</span> ${data.age}</div>
+                <div class="info-item"><span>Style:</span> 3D Cinematic</div>
+                <div class="info-item"><span>Status:</span> <span class="tag-locked">LOCKED</span></div>
+            </div>
+            <p class="prompt-text"><strong>Master Prompt:</strong> ${data.face_prompt}</p>
+        `;
     }
 
     handleSend() {

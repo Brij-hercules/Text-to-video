@@ -29,9 +29,13 @@
                     <span class="icon">👤</span>
                     <span>Face Library</span>
                 </div>
-                <div class="nav-item">
+                <div class="nav-item" onclick="app.switchTab('generations')">
                     <span class="icon">🎬</span>
                     <span>My Generations</span>
+                </div>
+                <div class="nav-item" onclick="app.switchTab('preview')">
+                    <span class="icon">👗</span>
+                    <span>Model Preview</span>
                 </div>
             </nav>
 
@@ -55,7 +59,7 @@
                 </div>
             </header>
 
-            <div class="chat-area" id="chatArea">
+            <div class="chat-area active-tab" id="chatArea">
                 <div class="welcome-message">
                     <div class="ai-avatar">🤖</div>
                     <div class="message-bubble">
@@ -63,8 +67,20 @@
                         <p>I'm your AI Video Assistant. I'll help you create high-quality, consistent videos. First, let's set up your character's face.</p>
                         <div class="action-buttons">
                             <button class="btn-primary" onclick="app.requestUpload()">Upload Face</button>
-                            <button class="btn-secondary" onclick="app.requestGenerateFace()">Generate AI Face</button>
+                            <button class="btn-secondary" onclick="app.requestGenerateFace()">Generate AI Girl Model</button>
                         </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="preview-area" id="previewArea" style="display: none;">
+                <div class="preview-card">
+                    <h3>Character Identity (Locked)</h3>
+                    <div class="model-display" id="modelDisplay">
+                        <div class="no-model">No Model Generated Yet</div>
+                    </div>
+                    <div class="model-info" id="modelInfo">
+                        <!-- Model metadata will appear here -->
                     </div>
                 </div>
             </div>
