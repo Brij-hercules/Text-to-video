@@ -116,35 +116,88 @@ class VideoAssistant {
         }
     }
 
-    setQuality(q) {
-        this.state.current_quality = q;
-        this.updateActiveButtons('resolution', q);
-    }
+    setMode(mode) {
+        this.state.current_mode = mode;
+        const textGroup = document.getElementById('textInputGroup');
+        const mediaGroup = document.getElementById('mediaUploadGroup');
+        const btns = document.querySelectorAll('.mode-btn');
+        
+        btns.forEach(b => b.classList.remove('active'));
+        if (event) event.target.classList.add('active');
 
-    setDuration(d) {
-        this.state.current_duration = d;
-        this.updateActiveButtons('duration', d);
-    }
-
-    setModel(m) {
-        this.state.current_model = m;
-    }
-
-    updateActiveButtons(type, value) {
-        // Logic to highlight selected buttons in studio
-        console.log(`Setting ${type} to ${value}`);
+        if (mode === 'text-to-video') {
+            textGroup.style.display = 'block';
+            mediaGroup.style.display = 'none';
+        } else {
+            textGroup.style.display = 'none';
+            mediaGroup.style.display = 'block';
+        }
     }
 
     handleStudioGenerate() {
         if (!this.state.face_id) {
             this.switchTab('chat');
-            this.respond("Pehla tamari character identity (Girl Model) create karo!");
+            this.respond("Pehla tamari 'Girl Model' identity create karo jethi character consistency rahai!");
             return;
         }
 
-        const params = this.generateParams("Studio generated cinematic video");
+        const prompt = document.getElementById('studioPrompt').value;
+        if (!prompt && this.state.current_mode === 'text-to-video') {
+            alert("Pehla tamari vision lakho (Prompt)!");
+            return;
+        }
+
+        this.startGenerationSim();
+    }
+
+    startGenerationSim() {
+        const progressContainer = document.getElementById('progressBarContainer');
+        const progressFill = document.getElementById('progressFill');
+        const progressText = document.getElementById('progressText');
+        const videoContainer = document.getElementById('videoContainer');
+        const genBtn = document.getElementById('generateBtn');
+
+        genBtn.disabled = true;
+        progressContainer.style.display = 'block';
+        videoContainer.innerHTML = '<div class="loading-spinner"></div><p>Rendering Cinematic Frames...</p>';
+
+        let progress = 0;
+        const interval = setInterval(() => {
+            progress += Math.random() * 15;
+            if (progress >= 100) {
+                progress = 100;
+                clearInterval(interval);
+                this.completeGenerationSim();
+            }
+            progressFill.style.width = `${progress}%`;
+            progressText.innerText = `Generating... ${Math.round(progress)}%`;
+        }, 600);
+    }
+
+    completeGenerationSim() {
+        const videoContainer = document.getElementById('videoContainer');
+        const genBtn = document.getElementById('generateBtn');
+        const progressBar = document.getElementById('progressBarContainer');
+
+        genBtn.disabled = false;
+        progressBar.style.display = 'none';
+
+        // High-quality cinematic placeholder video
+        videoContainer.innerHTML = `
+            <video autoplay loop muted playsinline class="generated-video">
+                <source src="https://assets.mixkit.co/videos/preview/mixkit-girl-walking-in-a-forest-40010-large.mp4" type="video/mp4">
+                Your browser does not support the video tag.
+            </video>
+            <div class="video-overlay-tag">PRODUCED: 4K ULTRA</div>
+        `;
+
+        const params = this.generateParams(document.getElementById('studioPrompt').value || "AI Character Video");
         this.updateParamsViewer(params);
-        alert("Video Production Started with Studio Parameters! Check JSON output.");
+        this.respond("Video generation complete! Tamari 'Girl Model' character consistency sathe video ready chhe.");
+    }
+
+    downloadVideo() {
+        alert("Downloading high-quality cinematic render...");
     }
 
     updateModelPreview() {

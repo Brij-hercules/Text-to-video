@@ -74,45 +74,82 @@
             </div>
 
             <div class="studio-area" id="studioArea" style="display: none;">
-                <div class="studio-header">
-                    <h2>Generation Studio</h2>
-                    <p>Fine-tune your cinematic parameters for high-end production.</p>
-                </div>
-                
-                <div class="studio-controls">
-                    <div class="control-group">
-                        <label>Resolution</label>
-                        <div class="option-grid">
-                            <button class="opt-btn" onclick="app.setQuality('480p')">480p</button>
-                            <button class="opt-btn" onclick="app.setQuality('720p')">720p</button>
-                            <button class="opt-btn active" onclick="app.setQuality('1080p')">1080p</button>
-                            <button class="opt-btn" onclick="app.setQuality('4k')">4K Ultra</button>
+                <div class="studio-container">
+                    <!-- Left: Controls -->
+                    <div class="studio-sidebar">
+                        <div class="studio-header">
+                            <h2>Video Studio</h2>
+                            <p>Select your mode and start production.</p>
+                        </div>
+
+                        <div class="mode-selector">
+                            <button class="mode-btn active" onclick="app.setMode('text-to-video')">Text</button>
+                            <button class="mode-btn" onclick="app.setMode('image-to-video')">Image</button>
+                            <button class="mode-btn" onclick="app.setMode('video-to-video')">Video</button>
+                        </div>
+                        
+                        <div class="studio-controls">
+                            <div class="control-group" id="textInputGroup">
+                                <label>Cinematic Prompt</label>
+                                <textarea id="studioPrompt" placeholder="Describe your cinematic vision..." rows="3"></textarea>
+                            </div>
+
+                            <div class="control-group" id="mediaUploadGroup" style="display: none;">
+                                <label>Source Media</label>
+                                <div class="upload-box" onclick="alert('Upload functionality coming soon!')">
+                                    <span>📁 Upload Image/Video</span>
+                                </div>
+                            </div>
+
+                            <div class="control-group">
+                                <label>Resolution & Model</label>
+                                <div class="option-grid-mini">
+                                    <select class="studio-select" id="studioQuality" onchange="app.setQuality(this.value)">
+                                        <option value="1080p">1080p Pro</option>
+                                        <option value="4k">4K Ultra</option>
+                                        <option value="720p">720p Turbo</option>
+                                    </select>
+                                    <select class="studio-select" id="studioModel" onchange="app.setModel(this.value)">
+                                        <option value="pro">Pro Engine</option>
+                                        <option value="ultra">Ultra 3D</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div class="control-group">
+                                <label>Duration</label>
+                                <div class="option-grid-mini">
+                                    <button class="opt-btn-mini active" onclick="app.setDuration('5s')">5s</button>
+                                    <button class="opt-btn-mini" onclick="app.setDuration('10s')">10s</button>
+                                    <button class="opt-btn-mini" onclick="app.setDuration('20s')">20s</button>
+                                </div>
+                            </div>
+
+                            <button class="btn-primary studio-gen-btn" id="generateBtn" onclick="app.handleStudioGenerate()">
+                                Generate Video
+                            </button>
                         </div>
                     </div>
 
-                    <div class="control-group">
-                        <label>Duration</label>
-                        <div class="option-grid">
-                            <button class="opt-btn active" onclick="app.setDuration('5s')">5s</button>
-                            <button class="opt-btn" onclick="app.setDuration('10s')">10s</button>
-                            <button class="opt-btn" onclick="app.setDuration('20s')">20s</button>
-                            <button class="opt-btn" onclick="app.setDuration('60s')">1 Min</button>
-                            <button class="opt-btn" onclick="app.setDuration('600s')">10 Min</button>
+                    <!-- Right: Preview -->
+                    <div class="studio-preview">
+                        <div class="preview-window">
+                            <div class="video-container" id="videoContainer">
+                                <div class="placeholder-content">
+                                    <span class="icon">🎬</span>
+                                    <p>Ready to Produce</p>
+                                </div>
+                            </div>
+                            <div class="progress-bar-container" id="progressBarContainer" style="display: none;">
+                                <div class="progress-fill" id="progressFill"></div>
+                                <span id="progressText">Generating... 0%</span>
+                            </div>
+                        </div>
+                        <div class="preview-actions">
+                            <button class="btn-secondary" onclick="alert('Editing features unlocked after generation')">Edit Scene</button>
+                            <button class="btn-secondary" onclick="app.downloadVideo()">Download</button>
                         </div>
                     </div>
-
-                    <div class="control-group">
-                        <label>AI Model</label>
-                        <select class="studio-select" id="modelSelect" onchange="app.setModel(this.value)">
-                            <option value="pro">Pro (Cinematic Realism)</option>
-                            <option value="turbo">Turbo (Fast Generation)</option>
-                            <option value="ultra">Ultra 3D (Experimental)</option>
-                        </select>
-                    </div>
-
-                    <button class="btn-primary studio-gen-btn" onclick="app.handleStudioGenerate()">
-                        Initiate Production
-                    </button>
                 </div>
             </div>
 
