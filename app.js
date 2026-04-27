@@ -8,6 +8,7 @@ class VideoAssistant {
         if (window.supabase) {
             this.supabase = window.supabase.createClient(this.supabaseUrl, this.supabaseKey);
             console.log('✅ Supabase Initialized Successfully');
+            this.fetchLatestModel(); // Fetch model on start
         } else {
             console.error('❌ Supabase Library not found. Check index.html script tag.');
         }
@@ -54,6 +55,35 @@ class VideoAssistant {
                 e.currentTarget.classList.add('active');
             });
         });
+    }
+
+    async fetchLatestModel() {
+        if (!this.supabase) return;
+
+        try {
+            const { data, error } = await this.supabase
+                .from('faces')
+                .select('*')
+                .order('created_at', { ascending: false })
+                .limit(1);
+
+            if (error) throw error;
+
+            if (data && data.length > 0) {
+                const model = data[0];
+                this.state.face_id = model.face_id;
+                this.state.face_lock = true;
+                this.state.face_seed = model.seed;
+                this.state.face_metadata = model;
+                
+                this.faceStatus.classList.add('connected');
+                this.faceStatus.querySelector('span').textContent = "Model: Girl (Loaded)";
+                this.updateModelPreview();
+                console.log('✅ Latest Model Fetched:', model.face_id);
+            }
+        } catch (err) {
+            console.error('❌ Fetch Error:', err.message);
+        }
     }
 
     switchTab(tab) {
