@@ -1,0 +1,20 @@
+services:
+  - type: web
+    name: text-to-video-backend
+    runtime: docker
+    autoDeploy: true
+    plan: free
+    healthCheckPath: /api/health
+    envVars:
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false
+      - key: SUPABASE_BUCKET
+        value: generated-videos
+      - key: SUPABASE_TABLE
+        value: video_generations
+      - key: DEFAULT_DURATION_SECONDS
+        value: "10"
+      - key: DEFAULT_FPS
+        value: "24"
