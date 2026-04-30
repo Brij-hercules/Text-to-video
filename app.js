@@ -1,6 +1,6 @@
 class VideoAssistant {
     constructor() {
-        this.backendUrl = window.APP_CONFIG?.BACKEND_URL || "http://localhost:8000";
+        this.backendUrl = this.resolveBackendUrl();
         // Supabase Configuration
         this.supabaseUrl = 'https://dfamxzkezsfmetsttrjp.supabase.co';
         this.supabaseKey = 'sb_publishable_jabIvwy51ZJqvE2zA9vJzg_EuqeaLyv';
@@ -27,6 +27,18 @@ class VideoAssistant {
         };
         
         this.init();
+    }
+
+    resolveBackendUrl() {
+        const configured = window.APP_CONFIG?.BACKEND_URL;
+        if (configured && configured.trim()) return configured.trim();
+
+        const host = window.location.hostname;
+        const isLocal = host === "localhost" || host === "127.0.0.1";
+        if (isLocal) return "http://localhost:8000";
+
+        // Deployed frontend expects a deployed backend URL via config.js.
+        return "";
     }
 
     init() {
@@ -273,6 +285,10 @@ class VideoAssistant {
     }
 
     async generateVideoWithBackend(params) {
+        if (!this.backendUrl) {
+            throw new Error("Backend URL not configured. Set window.APP_CONFIG.BACKEND_URL in config.js");
+        }
+
         const formData = new FormData();
         formData.append("prompt", document.getElementById('studioPrompt').value || "AI Cinematic Render");
         formData.append("duration", params.duration);
@@ -289,7 +305,7 @@ class VideoAssistant {
         }
         formData.append("image", imageFile);
 
-        const res = await fetch(`${this.backendUrl}/api/generate-video`, {
+        const res = await fetch(`${this.backendUrl.replace(/\/$/, "")}/api/generate-video`, {
             method: "POST",
             body: formData
         });
