@@ -6,7 +6,7 @@ import uuid
 from datetime import datetime, timezone
 
 from dotenv import load_dotenv
-from flask import Flask, jsonify, request
+from flask import Flask, jsonify, request, send_from_directory
 from flask_cors import CORS
 from supabase import create_client
 
@@ -22,6 +22,8 @@ SUPABASE_BUCKET = os.getenv("SUPABASE_BUCKET", "generated-videos").strip()
 SUPABASE_TABLE = os.getenv("SUPABASE_TABLE", "video_generations").strip()
 DEFAULT_DURATION = int(os.getenv("DEFAULT_DURATION_SECONDS", "10"))
 DEFAULT_FPS = int(os.getenv("DEFAULT_FPS", "24"))
+LOCAL_OUTPUT_DIR = os.path.join(os.path.dirname(__file__), "generated_videos")
+os.makedirs(LOCAL_OUTPUT_DIR, exist_ok=True)
 
 supabase = None
 if SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY:
@@ -78,7 +80,7 @@ def create_video_from_image(image_path: str, out_path: str, duration: int, fps: 
 
 def upload_to_supabase(video_path: str, file_name: str) -> str:
     if not supabase:
-        return file_name
+        return ""
     with open(video_path, "rb") as f:
         supabase.storage.from_(SUPABASE_BUCKET).upload(
             path=file_name,
@@ -104,6 +106,11 @@ def health():
             "ffmpeg_available": bool(shutil.which("ffmpeg")),
         }
     )
+
+
+@app.get("/api/videos/<path:file_name>")
+def get_local_video(file_name):
+    return send_from_directory(LOCAL_OUTPUT_DIR, file_name)
 
 
 @app.post("/api/generate-video")
@@ -140,7 +147,13 @@ def generate_video():
 
         ensure_ffmpeg()
         create_video_from_image(image_path, out_path, duration_sec, DEFAULT_FPS)
+
         video_url = upload_to_supabase(out_path, out_name)
+        if not video_url:
+            local_target = os.path.join(LOCAL_OUTPUT_DIR, out_name)
+            shutil.copy2(out_path, local_target)
+            base = request.host_url.rstrip("/")
+            video_url = f"{base}/api/videos/{out_name}"
 
         metadata = {
             "prompt": prompt,
