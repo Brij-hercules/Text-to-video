@@ -1,5 +1,6 @@
 class VideoAssistant {
     constructor() {
+        this.backendUrl = "http://localhost:8000";
         // Supabase Configuration
         this.supabaseUrl = 'https://dfamxzkezsfmetsttrjp.supabase.co';
         this.supabaseKey = 'sb_publishable_jabIvwy51ZJqvE2zA9vJzg_EuqeaLyv';
@@ -19,6 +20,8 @@ class VideoAssistant {
             current_model: 'pro',
             current_quality: '1080p',
             current_duration: '5s',
+            current_ratio: '9:16',
+            source_file: null,
             current_tab: localStorage.getItem('activeTab') || 'chat',
             history: []
         };
@@ -180,6 +183,11 @@ class VideoAssistant {
             return;
         }
 
+        if (this.state.current_mode === 'image-to-video' && !this.state.source_file) {
+            alert("Image-to-video mate pehla source image upload karo.");
+            return;
+        }
+
         await this.startGenerationSim();
     }
 
@@ -195,16 +203,28 @@ class VideoAssistant {
         videoContainer.innerHTML = '<div class="loading-spinner"></div><p>Rendering Cinematic Frames...</p>';
 
         let progress = 0;
-        const interval = setInterval(async () => {
+        const interval = setInterval(() => {
             progress += Math.random() * 15;
             if (progress >= 100) {
                 progress = 100;
                 clearInterval(interval);
-                await this.completeGenerationSim();
             }
             progressFill.style.width = `${progress}%`;
             progressText.innerText = `Generating... ${Math.round(progress)}%`;
         }, 400);
+
+        try {
+            await this.completeGenerationSim();
+        } catch (err) {
+            console.error("Generation failed:", err);
+            const videoContainer = document.getElementById('videoContainer');
+            videoContainer.innerHTML = `<p style="color:#fca5a5; padding: 20px;">${err.message || "Generation failed"}</p>`;
+            this.respond(`⚠️ Generation failed: ${err.message || "Unknown error"}. Backend run karo and retry.`);
+        } finally {
+            clearInterval(interval);
+            progressFill.style.width = '100%';
+            progressText.innerText = 'Generating... 100%';
+        }
     }
 
     async completeGenerationSim() {
@@ -215,31 +235,31 @@ class VideoAssistant {
         genBtn.disabled = false;
         progressBar.style.display = 'none';
 
-        const prompt = (document.getElementById('studioPrompt').value || "").toLowerCase();
-        let videoUrl = "https://assets.mixkit.co/videos/preview/mixkit-girl-walking-in-a-forest-40010-large.mp4"; // Default
-        
-        if (prompt.includes("beach") || prompt.includes("ocean") || prompt.includes("water")) {
-            videoUrl = "https://assets.mixkit.co/videos/preview/mixkit-young-woman-walking-on-the-beach-at-sunset-1208-large.mp4";
-        } else if (prompt.includes("urban") || prompt.includes("city") || prompt.includes("street")) {
-            videoUrl = "https://assets.mixkit.co/videos/preview/mixkit-woman-walking-down-a-busy-city-street-41221-large.mp4";
-        } else if (prompt.includes("cinematic") || prompt.includes("dark")) {
-            videoUrl = "https://assets.mixkit.co/videos/preview/mixkit-woman-sitting-on-a-bench-looking-at-the-ocean-at-4330-large.mp4";
-        }
+        const prompt = document.getElementById('studioPrompt').value || "AI Cinematic Render";
+        const params = this.generateParams(prompt);
+        const response = await this.generateVideoWithBackend(params);
+        const videoUrl = response.video_url;
 
         videoContainer.innerHTML = `
-            <video autoplay loop muted playsinline class="generated-video">
+            <video autoplay loop muted playsinline class="generated-video" controls>
                 <source src="${videoUrl}" type="video/mp4">
             </video>
             <div class="video-overlay-tag">PRODUCED: ${this.state.current_quality} | ID: ${this.state.face_id}</div>
         `;
 
         const videoData = {
+            status: response.status || "success",
             face_id: this.state.face_id,
-            prompt: document.getElementById('studioPrompt').value || "AI Cinematic Render",
+            prompt: prompt,
+            prompt_used: response.prompt_used || params.prompt,
             video_url: videoUrl,
-            quality: this.state.current_quality,
-            duration: this.state.current_duration,
-            aspect_ratio: this.state.current_ratio || '16:9',
+            duration: response.duration || this.state.current_duration,
+            quality: response.quality || this.state.current_quality,
+            aspect_ratio: response.aspect_ratio || this.state.current_ratio || '9:16',
+            model: response.model || params.model,
+            face_lock: response.face_lock ?? true,
+            format: params.format || "mp4",
+            fps: params.fps || 24,
             created_at: new Date().toISOString()
         };
 
@@ -248,9 +268,62 @@ class VideoAssistant {
             this.saveGeneration(videoData);
         }
 
-        const params = this.generateParams(videoData.prompt);
         this.updateParamsViewer(params);
         this.respond(`Video ready! Tamari character identity (${this.state.face_id}) sathe generate thayu chhe ane Supabase Storage ma save thayu chhe.`);
+    }
+
+    async generateVideoWithBackend(params) {
+        const formData = new FormData();
+        formData.append("prompt", document.getElementById('studioPrompt').value || "AI Cinematic Render");
+        formData.append("duration", params.duration);
+        formData.append("quality", params.quality);
+        formData.append("aspect_ratio", params.aspect_ratio);
+        formData.append("model", params.model);
+        formData.append("face_lock", String(params.face_lock));
+
+        // Backend requires an image; for text mode fallback to generated placeholder.
+        let imageFile = this.state.source_file;
+        if (!imageFile) {
+            const blob = await this.createPlaceholderImageBlob();
+            imageFile = new File([blob], "placeholder.jpg", { type: "image/jpeg" });
+        }
+        formData.append("image", imageFile);
+
+        const res = await fetch(`${this.backendUrl}/api/generate-video`, {
+            method: "POST",
+            body: formData
+        });
+
+        if (!res.ok) {
+            let errorMessage = "Video generation failed";
+            try {
+                const errorData = await res.json();
+                errorMessage = errorData.message || errorMessage;
+            } catch (e) {
+                console.error("Failed to parse backend error", e);
+            }
+            throw new Error(errorMessage);
+        }
+
+        return res.json();
+    }
+
+    async createPlaceholderImageBlob() {
+        const canvas = document.createElement("canvas");
+        canvas.width = 1080;
+        canvas.height = 1920;
+        const ctx = canvas.getContext("2d");
+        const grad = ctx.createLinearGradient(0, 0, 1080, 1920);
+        grad.addColorStop(0, "#0f172a");
+        grad.addColorStop(1, "#312e81");
+        ctx.fillStyle = grad;
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.fillStyle = "rgba(255,255,255,0.92)";
+        ctx.font = "bold 60px Inter";
+        ctx.fillText("Cinematic Reel", 250, 900);
+        ctx.font = "32px Inter";
+        ctx.fillText("Source image auto-generated for demo", 220, 970);
+        return new Promise((resolve) => canvas.toBlob(resolve, "image/jpeg", 0.95));
     }
 
     async saveGeneration(videoData) {
@@ -275,7 +348,22 @@ class VideoAssistant {
     }
 
     downloadVideo() {
-        alert("Downloading high-quality cinematic render...");
+        const video = document.querySelector("#videoContainer video");
+        if (!video || !video.currentSrc) {
+            alert("Pehla video generate karo, pachi download available thase.");
+            return;
+        }
+        const link = document.createElement("a");
+        link.href = video.currentSrc;
+        link.download = `cinematic-reel-${Date.now()}.mp4`;
+        link.click();
+    }
+
+    setSourceFile(file) {
+        this.state.source_file = file || null;
+        const label = document.getElementById("uploadLabel");
+        if (!label) return;
+        label.textContent = file ? `✅ ${file.name}` : "📁 Upload Image";
     }
 
     updateModelPreview() {
@@ -358,20 +446,49 @@ class VideoAssistant {
             : '5s';
 
         // Quality and Model mapping
-        const quality = this.state.current_quality;
-        const model = (quality === '1080p') ? 'pro' : 'turbo';
+        const quality = this.state.current_quality || '1080p';
+        const model = 'stable-video-diffusion';
+        const safeDuration = parseInt(duration, 10) > 15 ? '15s' : duration;
 
-        // Mock prompt enhancement logic
-        const enhancedPrompt = `${userInput}, cinematic lighting, 8k resolution, masterful camera work, highly detailed environment, emotional depth, photorealistic.`;
+        // Cinematic prompt enhancement aligned with image-to-video reel pipeline
+        const enhancedPrompt = [
+            userInput,
+            "single-subject identity lock, preserve same face, hairstyle, body structure, outfit identity, and skin tone across all frames",
+            "cinematic composition, realistic shadows, depth of field, volumetric lighting, movie-grade color grading",
+            "ultra-detailed textures, photorealistic skin and eyes, natural hair movement, coherent body physics",
+            "smooth gimbal camera motion with stable tracking, premium social media reel storytelling",
+            "vertical 9:16 framing for 1080x1920 output, emotionally cinematic atmosphere"
+        ].join(", ");
+
+        const negativePrompt = [
+            "blurry frames",
+            "mutated hands",
+            "extra limbs",
+            "distorted anatomy",
+            "duplicated face",
+            "low quality textures",
+            "broken motion",
+            "jitter",
+            "flickering",
+            "cartoon artifacts",
+            "watermark",
+            "text overlay",
+            "unrealistic physics",
+            "face distortion"
+        ].join(", ");
         
         const params = {
             "type": "text-to-video",
             "prompt": enhancedPrompt,
-            "negative_prompt": "low resolution, blurry, distorted face, unrealistic, watermark, bad anatomy",
-            "duration": duration,
+            "negative_prompt": negativePrompt,
+            "duration": safeDuration,
             "quality": quality,
             "model": model,
-            "camera_motion": "drone", // Defaulting to drone as per request
+            "resolution": "1080x1920",
+            "fps": 24,
+            "format": "mp4",
+            "aspect_ratio": this.state.current_ratio || '9:16',
+            "camera_motion": "smooth gimbal motion",
             "style": "cinematic",
             "face_id": this.state.face_id,
             "face_lock": true,
@@ -380,7 +497,7 @@ class VideoAssistant {
                 {
                     "scene": 1,
                     "description": enhancedPrompt,
-                    "duration": duration
+                    "duration": safeDuration
                 }
             ]
         };

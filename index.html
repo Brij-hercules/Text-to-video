@@ -96,9 +96,10 @@
 
                             <div class="control-group" id="mediaUploadGroup" style="display: none;">
                                 <label>Source Media</label>
-                                <div class="upload-box" onclick="alert('Upload functionality coming soon!')">
-                                    <span>📁 Upload Image/Video</span>
+                                <div class="upload-box" onclick="document.getElementById('sourceFileInput').click()">
+                                    <span id="uploadLabel">📁 Upload Image</span>
                                 </div>
+                                <input id="sourceFileInput" type="file" accept="image/*" style="display: none;" onchange="app.setSourceFile(this.files[0])">
                             </div>
 
                             <div class="control-group">
