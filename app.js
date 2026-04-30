@@ -1,6 +1,6 @@
 class VideoAssistant {
     constructor() {
-        this.backendUrl = "http://localhost:8000";
+        this.backendUrl = window.APP_CONFIG?.BACKEND_URL || "http://localhost:8000";
         // Supabase Configuration
         this.supabaseUrl = 'https://dfamxzkezsfmetsttrjp.supabase.co';
         this.supabaseKey = 'sb_publishable_jabIvwy51ZJqvE2zA9vJzg_EuqeaLyv';
