@@ -463,7 +463,8 @@ class VideoAssistant {
 
         // Quality and Model mapping
         const quality = this.state.current_quality || '1080p';
-        const model = 'stable-video-diffusion';
+        const model = this.state.current_model === 'nvidia' ? 'nvidia' : 
+                      this.state.current_model === 'hailuo' ? 'hailuo' : 'stable-video-diffusion';
         const safeDuration = parseInt(duration, 10) > 15 ? '15s' : duration;
 
         // Cinematic prompt enhancement aligned with image-to-video reel pipeline

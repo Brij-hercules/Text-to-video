@@ -9,6 +9,9 @@ from dotenv import load_dotenv
 from flask import Flask, jsonify, request, send_from_directory
 from flask_cors import CORS
 from supabase import create_client
+import requests
+import time
+import base64
 
 
 load_dotenv()
@@ -24,6 +27,10 @@ DEFAULT_DURATION = int(os.getenv("DEFAULT_DURATION_SECONDS", "10"))
 DEFAULT_FPS = int(os.getenv("DEFAULT_FPS", "24"))
 LOCAL_OUTPUT_DIR = os.path.join(os.path.dirname(__file__), "generated_videos")
 os.makedirs(LOCAL_OUTPUT_DIR, exist_ok=True)
+
+# NVIDIA NIM Config
+NVIDIA_API_KEY = os.getenv("NVIDIA_API_KEY", "").strip()
+NVIDIA_BASE_URL = os.getenv("NVIDIA_BASE_URL", "https://integrate.api.nvidia.com/v1").strip()
 
 supabase = None
 if SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY:
@@ -76,6 +83,102 @@ def create_video_from_image(image_path: str, out_path: str, duration: int, fps: 
     result = subprocess.run(cmd, capture_output=True, text=True, check=False)
     if result.returncode != 0:
         raise RuntimeError(result.stderr.strip() or "ffmpeg failed to render video.")
+
+
+def generate_video_minimax(prompt: str, image_path: str) -> str:
+    """Uses MiniMax Hailuo API to generate video."""
+    if not MINIMAX_API_KEY or not MINIMAX_GROUP_ID:
+        raise RuntimeError("MiniMax API Key or Group ID is missing in .env")
+
+    # Step 1: Upload image to MiniMax (Optional: if they require file_id, 
+    # but some versions allow direct URL or base64. Let's use the file upload flow if needed).
+    # For now, let's assume the task-based video generation with local file upload.
+    
+    headers = {
+        "Authorization": f"Bearer {MINIMAX_API_KEY}",
+        "Content-Type": "application/json"
+    }
+
+    # Note: MiniMax often uses a specific file upload API first. 
+    # But some unified APIs allow direct prompt.
+    # Below is the standard task submission for video-01
+    
+    url = f"{MINIMAX_BASE_URL}/video_generation?GroupId={MINIMAX_GROUP_ID}"
+    
+    payload = {
+        "model": "video-01",
+        "prompt": prompt,
+        # For image-to-video, we might need to upload the image to their storage first
+        # and get a file_id. For simplicity in this step, let's handle the direct request
+        # or refer to their latest T2V if no image is provided.
+    }
+
+    # If image is provided, we should ideally upload it. 
+    # Simplified version for now:
+    response = requests.post(url, headers=headers, json=payload)
+    res_data = response.json()
+    
+    if response.status_code != 200 or "task_id" not in res_data:
+        raise RuntimeError(f"MiniMax API Error: {res_data.get('base_resp', {}).get('status_msg', 'Unknown error')}")
+
+    task_id = res_data["task_id"]
+    
+    # Step 2: Polling
+    query_url = f"{MINIMAX_BASE_URL}/query/video_generation?GroupId={MINIMAX_GROUP_ID}&task_id={task_id}"
+    
+    for _ in range(60): # Poll for 5-10 minutes
+        time.sleep(10)
+        query_res = requests.get(query_url, headers=headers)
+        query_data = query_res.json()
+        
+        status = query_data.get("status")
+        if status == "Success":
+            return query_data["file_id"] # Or the URL if provided
+        elif status == "Fail":
+            raise RuntimeError(f"MiniMax Generation Failed: {query_data.get('error_msg')}")
+            
+    raise RuntimeError("MiniMax generation timed out.")
+
+
+def generate_video_nvidia(image_path: str, out_path: str):
+    """Uses NVIDIA NIM (Stable Video Diffusion) to generate video."""
+    if not NVIDIA_API_KEY:
+        raise RuntimeError("NVIDIA API Key is missing in .env")
+
+    # NVIDIA NIM expects base64 image
+    with open(image_path, "rb") as f:
+        image_b64 = base64.b64encode(f.read()).decode('utf-8')
+
+    # Note: NVIDIA NIM SVD endpoint usually follows this pattern
+    # We use the generic 'genai' path or specific model path
+    url = f"https://ai.api.nvidia.com/v1/genai/stabilityai/stable-video-diffusion"
+    
+    headers = {
+        "Authorization": f"Bearer {NVIDIA_API_KEY}",
+        "Accept": "application/json",
+    }
+
+    payload = {
+        "image": f"data:image/jpeg;base64,{image_b64}",
+        "seed": 0,
+        "cfg_scale": 2.5,
+        "motion_bucket_id": 127
+    }
+
+    response = requests.post(url, headers=headers, json=payload)
+    res_data = response.json()
+
+    if response.status_code != 200:
+        raise RuntimeError(f"NVIDIA API Error: {res_data.get('message', 'Unknown error')}")
+
+    # NVIDIA returns base64 video string
+    video_b64 = res_data.get("video")
+    if not video_b64:
+        raise RuntimeError("No video data returned from NVIDIA API")
+
+    # Save base64 to file
+    with open(out_path, "wb") as f:
+        f.write(base64.b64decode(video_b64))
 
 
 def upload_to_supabase(video_path: str, file_name: str) -> str:
@@ -146,7 +249,18 @@ def generate_video():
         image.save(image_path)
 
         ensure_ffmpeg()
-        create_video_from_image(image_path, out_path, duration_sec, DEFAULT_FPS)
+        
+        if model == "hailuo" or model == "nvidia":
+            # Using NVIDIA NIM API
+            try:
+                generate_video_nvidia(image_path, out_path)
+                video_url = "" # Will be set by local/supabase logic below
+            except Exception as e:
+                print(f"NVIDIA API failed, falling back to local: {e}")
+                create_video_from_image(image_path, out_path, duration_sec, DEFAULT_FPS)
+        else:
+            # Default local fallback
+            create_video_from_image(image_path, out_path, duration_sec, DEFAULT_FPS)
 
         video_url = upload_to_supabase(out_path, out_name)
         if not video_url:
