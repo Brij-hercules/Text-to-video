@@ -6,7 +6,7 @@ if not exist ".venv\Scripts\python.exe" (
   py -3 -m venv .venv
 )
 
-echo [2/3] Installing backend dependencies...
+echo [2/3] Installing/Updating backend dependencies...
 call .venv\Scripts\activate
 python -m pip install --upgrade pip
 pip install -r requirements.txt

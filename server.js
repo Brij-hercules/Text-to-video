@@ -6,6 +6,7 @@ const path = require('path');
 const fs = require('fs');
 const { spawn } = require('child_process');
 const { createClient } = require('@supabase/supabase-js');
+const axios = require('axios');
 require('dotenv').config();
 
 const app = express();
@@ -97,6 +98,66 @@ app.get('/api/health', async (req, res) => {
 
 app.use('/api/videos', express.static(LOCAL_OUTPUT_DIR));
 
+async function generateVideoNvidia(imagePath, outPath) {
+    const fs = require('fs');
+    const imageB64 = fs.readFileSync(imagePath, { encoding: 'base64' });
+    
+    const url = "https://ai.api.nvidia.com/v1/genai/stabilityai/stable-video-diffusion";
+    const headers = {
+        "Authorization": `Bearer ${process.env.NVIDIA_API_KEY}`,
+        "Accept": "application/json"
+    };
+    const payload = {
+        "image": `data:image/jpeg;base64,${imageB64}`,
+        "seed": 0,
+        "cfg_scale": 2.5,
+        "motion_bucket_id": 127
+    };
+
+    const response = await axios.post(url, payload, { headers });
+    if (response.status !== 200) {
+        throw new Error(`NVIDIA API Error: ${response.data.message || 'Unknown'}`);
+    }
+
+    const videoB64 = response.data.video;
+    fs.writeFileSync(outPath, Buffer.from(videoB64, 'base64'));
+}
+
+async function generateVideoMiniMax(prompt, outPath) {
+    const url = `https://api.minimax.chat/v1/video_generation?GroupId=${process.env.MINIMAX_GROUP_ID}`;
+    const headers = {
+        "Authorization": `Bearer ${process.env.MINIMAX_API_KEY}`,
+        "Content-Type": "application/json"
+    };
+    const payload = {
+        "model": "video-01",
+        "prompt": prompt
+    };
+
+    const response = await axios.post(url, payload, { headers });
+    if (!response.data.task_id) {
+        throw new Error(`MiniMax Error: ${response.data.base_resp?.status_msg || 'Task failed'}`);
+    }
+
+    const taskId = response.data.task_id;
+    const queryUrl = `https://api.minimax.chat/v1/query/video_generation?GroupId=${process.env.MINIMAX_GROUP_ID}&task_id=${taskId}`;
+    
+    for (let i = 0; i < 60; i++) {
+        await new Promise(r => setTimeout(r, 10000));
+        const queryRes = await axios.get(queryUrl, { headers });
+        if (queryRes.data.status === "Success") {
+            // Download the video
+            const videoUrl = queryRes.data.file_id; // In some versions it's a URL
+            const videoRes = await axios.get(videoUrl, { responseType: 'arraybuffer' });
+            require('fs').writeFileSync(outPath, Buffer.from(videoRes.data));
+            return;
+        } else if (queryRes.data.status === "Fail") {
+            throw new Error(`MiniMax Failed: ${queryRes.data.error_msg}`);
+        }
+    }
+    throw new Error("MiniMax generation timed out.");
+}
+
 app.post('/api/generate-video', upload.single('image'), async (req, res) => {
     try {
         if (!req.file) {
@@ -126,7 +187,23 @@ app.post('/api/generate-video', upload.single('image'), async (req, res) => {
             });
         }
 
-        await createVideoFromImage(req.file.path, outPath, durationSec, 24);
+        if (model === 'hailuo') {
+            try {
+                await generateVideoMiniMax(enhancedPrompt, outPath);
+            } catch (apiError) {
+                console.error("MiniMax T2V failed, falling back to local:", apiError.message);
+                await createVideoFromImage(req.file.path, outPath, durationSec, 24);
+            }
+        } else if (model === 'nvidia') {
+            try {
+                await generateVideoNvidia(req.file.path, outPath);
+            } catch (apiError) {
+                console.error("NVIDIA API failed, falling back to local:", apiError.message);
+                await createVideoFromImage(req.file.path, outPath, durationSec, 24);
+            }
+        } else {
+            await createVideoFromImage(req.file.path, outPath, durationSec, 24);
+        }
 
         // Cleanup temp file
         fs.unlinkSync(req.file.path);

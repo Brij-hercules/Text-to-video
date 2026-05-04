@@ -269,7 +269,6 @@ class VideoAssistant {
             quality: response.quality || this.state.current_quality,
             aspect_ratio: response.aspect_ratio || this.state.current_ratio || '9:16',
             model: response.model || params.model,
-            face_lock: response.face_lock ?? true,
             format: params.format || "mp4",
             fps: params.fps || 24,
             created_at: new Date().toISOString()
