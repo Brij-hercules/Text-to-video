@@ -99,7 +99,10 @@ app.get('/api/health', async (req, res) => {
 app.use('/api/videos', express.static(LOCAL_OUTPUT_DIR));
 
 async function generateImageNvidia(prompt, outPath) {
-    const url = "https://ai.api.nvidia.com/v1/genai/stabilityai/sdxl-turbo";
+    const baseUrl = process.env.NVIDIA_BASE_URL || "https://ai.api.nvidia.com/v1";
+    const url = `${baseUrl}/genai/stabilityai/sdxl-turbo`;
+    console.log(`Calling Image API: ${url}`);
+    
     const headers = {
         "Authorization": `Bearer ${process.env.NVIDIA_API_KEY}`,
         "Accept": "application/json"
@@ -124,7 +127,10 @@ async function generateVideoNvidia(imagePath, outPath) {
     const fs = require('fs');
     const imageB64 = fs.readFileSync(imagePath, { encoding: 'base64' });
     
-    const url = "https://ai.api.nvidia.com/v1/genai/stabilityai/stable-video-diffusion";
+    const baseUrl = process.env.NVIDIA_BASE_URL || "https://ai.api.nvidia.com/v1";
+    const url = `${baseUrl}/genai/stabilityai/stable-video-diffusion`;
+    console.log(`Calling Video API: ${url}`);
+
     const headers = {
         "Authorization": `Bearer ${process.env.NVIDIA_API_KEY}`,
         "Accept": "application/json"
