@@ -209,20 +209,14 @@ app.post('/api/generate-video', upload.single('image'), async (req, res) => {
             });
         }
 
-        if (model === 'hailuo') {
-            try {
-                await generateVideoMiniMax(enhancedPrompt, outPath);
-            } catch (apiError) {
-                console.error("MiniMax T2V failed, falling back to local:", apiError.message);
-                await createVideoFromImage(req.file.path, outPath, durationSec, 24);
-            }
-        } else if (model === 'nvidia') {
+        // SMART ROUTING: Use NVIDIA NIM if its key is present, regardless of selection
+        if (process.env.NVIDIA_API_KEY && (model === 'nvidia' || model === 'hailuo' || model === 'pro')) {
             try {
                 let sourceImagePath = req.file.path;
                 
                 // If user didn't upload a real image (it's our placeholder), generate one!
                 if (req.file.originalname === 'placeholder.jpg') {
-                    console.log("No user image provided, generating one from prompt...");
+                    console.log("Generating image from prompt for NVIDIA flow...");
                     const generatedImagePath = req.file.path + "_gen.jpg";
                     await generateImageNvidia(prompt, generatedImagePath);
                     sourceImagePath = generatedImagePath;
@@ -230,7 +224,14 @@ app.post('/api/generate-video', upload.single('image'), async (req, res) => {
 
                 await generateVideoNvidia(sourceImagePath, outPath);
             } catch (apiError) {
-                console.error("NVIDIA API failed, falling back to local:", apiError.message);
+                console.error("NVIDIA flow failed:", apiError.message);
+                await createVideoFromImage(req.file.path, outPath, durationSec, 24);
+            }
+        } else if (model === 'hailuo') {
+            try {
+                await generateVideoMiniMax(enhancedPrompt, outPath);
+            } catch (apiError) {
+                console.error("MiniMax T2V failed, falling back to local:", apiError.message);
                 await createVideoFromImage(req.file.path, outPath, durationSec, 24);
             }
         } else {
