@@ -260,21 +260,12 @@ class VideoAssistant {
         `;
 
         const videoData = {
-            status: response.status || "success",
-            face_id: this.state.face_id,
             prompt: prompt,
-            prompt_used: response.prompt_used || params.prompt,
             video_url: videoUrl,
-            duration: response.duration || this.state.current_duration,
-            quality: response.quality || this.state.current_quality,
-            aspect_ratio: response.aspect_ratio || this.state.current_ratio || '9:16',
-            model: response.model || params.model,
-            format: params.format || "mp4",
-            fps: params.fps || 24,
             created_at: new Date().toISOString()
         };
 
-        // Save to Supabase
+        // Save to Supabase (only if configured)
         if (this.supabase) {
             this.saveGeneration(videoData);
         }

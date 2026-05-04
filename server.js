@@ -98,6 +98,28 @@ app.get('/api/health', async (req, res) => {
 
 app.use('/api/videos', express.static(LOCAL_OUTPUT_DIR));
 
+async function generateImageNvidia(prompt, outPath) {
+    const url = "https://ai.api.nvidia.com/v1/genai/stabilityai/sdxl-turbo";
+    const headers = {
+        "Authorization": `Bearer ${process.env.NVIDIA_API_KEY}`,
+        "Accept": "application/json"
+    };
+    const payload = {
+        "prompt": prompt,
+        "seed": Math.floor(Math.random() * 1000000),
+        "sampler": "K_EULER_ANCESTRAL",
+        "steps": 2
+    };
+
+    const response = await axios.post(url, payload, { headers });
+    if (response.status !== 200) {
+        throw new Error(`NVIDIA Image API Error: ${response.data.message || 'Unknown'}`);
+    }
+
+    const imageB64 = response.data.artifacts[0].base64;
+    fs.writeFileSync(outPath, Buffer.from(imageB64, 'base64'));
+}
+
 async function generateVideoNvidia(imagePath, outPath) {
     const fs = require('fs');
     const imageB64 = fs.readFileSync(imagePath, { encoding: 'base64' });
@@ -196,7 +218,17 @@ app.post('/api/generate-video', upload.single('image'), async (req, res) => {
             }
         } else if (model === 'nvidia') {
             try {
-                await generateVideoNvidia(req.file.path, outPath);
+                let sourceImagePath = req.file.path;
+                
+                // If user didn't upload a real image (it's our placeholder), generate one!
+                if (req.file.originalname === 'placeholder.jpg') {
+                    console.log("No user image provided, generating one from prompt...");
+                    const generatedImagePath = req.file.path + "_gen.jpg";
+                    await generateImageNvidia(prompt, generatedImagePath);
+                    sourceImagePath = generatedImagePath;
+                }
+
+                await generateVideoNvidia(sourceImagePath, outPath);
             } catch (apiError) {
                 console.error("NVIDIA API failed, falling back to local:", apiError.message);
                 await createVideoFromImage(req.file.path, outPath, durationSec, 24);
